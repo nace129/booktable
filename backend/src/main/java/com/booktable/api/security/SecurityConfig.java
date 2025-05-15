@@ -30,15 +30,25 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // http
+        //     .cors().and()
+        //     .csrf().disable()
+        //     .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+        //     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+        //     .authorizeHttpRequests()
+        //         .requestMatchers("/auth/**", "/restaurants/public/**", "/reviews/public/**").permitAll()
+        //         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+        //         .anyRequest().authenticated();
         http
-            .cors().and()
-            .csrf().disable()
-            .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-            .authorizeHttpRequests()
-                .requestMatchers("/auth/**", "/restaurants/public/**", "/reviews/public/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .anyRequest().authenticated();
+    .cors(org.springframework.security.config.Customizer.withDefaults())
+    .csrf(csrf -> csrf.disable())
+    .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    .authorizeHttpRequests(auth -> auth
+        .requestMatchers("/auth/**","/restaurants/public/**", "/reviews/public/**").permitAll()  // ✅ allow register/login
+        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+        .anyRequest().authenticated()
+    );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
