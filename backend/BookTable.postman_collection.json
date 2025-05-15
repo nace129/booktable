@@ -1,0 +1,361 @@
+{
+  "info": {
+    "_postman_id": "8f2e3b4a-5c6d-4e1f-9d8a-1f2b3c4d5e6f",
+    "name": "BookTable API",
+    "description": "API collection for BookTable restaurant reservation system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer@example.com\",\n    \"password\": \"password123\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"phoneNumber\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login as Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login as Restaurant Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"manager@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurants",
+      "item": [
+        {
+          "name": "Search Restaurants (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"date\": \"2024-03-20\",\n    \"time\": \"19:00\",\n    \"partySize\": 4,\n    \"city\": \"San Francisco\",\n    \"state\": \"CA\",\n    \"cuisineType\": \"Italian\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/public/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "public", "search"]
+            }
+          }
+        },
+        {
+          "name": "Get Restaurant Details (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/public/{{restaurantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "public", "{{restaurantId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Restaurant (Manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{managerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Italian Restaurant\",\n    \"description\": \"Authentic Italian cuisine\",\n    \"address\": {\n        \"street\": \"123 Main St\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zipCode\": \"94105\",\n        \"country\": \"USA\"\n    },\n    \"phoneNumber\": \"+1234567890\",\n    \"email\": \"restaurant@example.com\",\n    \"website\": \"https://example.com\",\n    \"cuisineTypes\": [\"Italian\"],\n    \"priceRange\": 2,\n    \"openingHours\": [\n        {\n            \"dayOfWeek\": \"MONDAY\",\n            \"openTime\": \"11:00\",\n            \"closeTime\": \"22:00\"\n        }\n    ],\n    \"tables\": [\n        {\n            \"name\": \"Table 1\",\n            \"capacity\": 4,\n            \"isAvailable\": true\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/restaurants",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants"]
+            }
+          }
+        },
+        {
+          "name": "Get Manager Restaurants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{managerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/manager",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "manager"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Restaurants (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restaurants/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["restaurants", "pending"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Create Reservation (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"restaurantId\": \"{{restaurantId}}\",\n    \"reservationDateTime\": \"2024-03-20T19:00:00\",\n    \"partySize\": 4,\n    \"specialRequests\": \"Window seat preferred\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations"]
+            }
+          }
+        },
+        {
+          "name": "Get Restaurant Reservations (Manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{managerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservations/restaurant/{{restaurantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations", "restaurant", "{{restaurantId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"restaurantId\": \"{{restaurantId}}\",\n    \"reservationId\": \"{{reservationId}}\",\n    \"rating\": 5,\n    \"comment\": \"Excellent service and food!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            }
+          }
+        },
+        {
+          "name": "Get Restaurant Reviews (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/public/restaurant/{{restaurantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "public", "restaurant", "{{restaurantId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "analytics", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.response.code === 200 && pm.response.json().token) {",
+          "    if (pm.request.url.path[1] === 'login') {",
+          "        const responseData = pm.response.json();",
+          "        if (responseData.roles.includes('ROLE_ADMIN')) {",
+          "            pm.environment.set('adminToken', responseData.token);",
+          "        } else if (responseData.roles.includes('ROLE_RESTAURANT_MANAGER')) {",
+          "            pm.environment.set('managerToken', responseData.token);",
+          "        } else {",
+          "            pm.environment.set('customerToken', responseData.token);",
+          "        }",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    }
+  ]
+}
