@@ -15,7 +15,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "reservations")
+@Document(collection = "restaurants-entries")
 @CompoundIndex(name = "restaurant_date_index", def = "{'restaurantId': 1, 'reservationDateTime': 1}")
 public class Reservation {
     

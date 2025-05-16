@@ -8,6 +8,7 @@ interface AuthContextType {
   register: (f: string, l:string, e: string, p: string,n:string) => Promise<void>;
   login: (u: string, p: string) => Promise<void>;
   logout: () => void;
+  isAuthenticated: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (firstName: string, lastName:string, email: string, password: string,  phoneNumber:string ) => {
     const { data } = await authService.register({ firstName, lastName, email, password, phoneNumber });
-    const newUser = { username: email, token: data.token };
+    const newUser = { username: email, token: data.token, role: 'diner' };
     setUser(newUser);
     axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
     localStorage.setItem('user', JSON.stringify(newUser));
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
 
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout, isAuthenticated: true, }}>
       {children}
     </AuthContext.Provider>
   );

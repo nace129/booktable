@@ -14,6 +14,8 @@ import com.booktable.api.repository.ReservationRepository;
 import com.booktable.api.repository.RestaurantRepository;
 import com.booktable.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +30,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ReservationService.class);
 
     private final ReservationRepository reservationRepository;
     private final RestaurantRepository restaurantRepository;
@@ -48,7 +52,11 @@ public class ReservationService {
         boolean isAdmin = currentUser.getRoles().contains("ROLE_ADMIN");
         boolean isCustomer = currentUser.getId().equals(reservation.getUserId());
         
-        Restaurant restaurant = restaurantRepository.findById(reservation.getRestaurantId())
+        // log.info("Looking up restaurant: {}", request.getRestaurantId());
+        // Restaurant restaurant = restaurantRepository.findById(reservation.getRestaurantId())
+        //         .orElseThrow(() -> {log.error("Restaurant not found: {}", request.getRestaurantId()); return ResourceNotFoundException("Restaurant not found")});
+
+        Restaurant restaurant = restaurantRepository.findByCustomRestaurantId(reservation.getRestaurantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
         
         boolean isRestaurantManager = currentUser.getId().equals(restaurant.getManagerId());
@@ -59,58 +67,140 @@ public class ReservationService {
         
         return mapToReservationResponse(reservation);
     }
-
+    
     public ReservationResponse createReservation(ReservationCreateRequest request) {
-        User currentUser = getCurrentUser();
+    User currentUser = getCurrentUser();
+
+    log.info("Looking up restaurant: {}", request.getRestaurantId());
+
+    Restaurant restaurant = restaurantRepository.findByRestaurantExternalId(request.getRestaurantId())
+            .orElseThrow(() -> {
+                log.error("Restaurant not found: {}", request.getRestaurantId());
+                return new ResourceNotFoundException("Restaurant not found");
+            });
+
         
-        // Find the restaurant
-        Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
-        
-        if (!restaurant.isApproved() || !restaurant.isActive()) {
-            throw new BadRequestException("Restaurant is not available for reservations");
-        }
-        
-        // Check if reservation time is in the future
-        if (request.getReservationDateTime().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Reservation time must be in the future");
-        }
-        
-        // Find an available table that can accommodate the party
-        Optional<Table> availableTable = findAvailableTable(
-                restaurant, 
-                request.getReservationDateTime(), 
-                request.getPartySize());
-        
-        if (availableTable.isEmpty()) {
-            throw new BadRequestException("No available tables for the requested time and party size");
-        }
-        
-        // Create the reservation
-        Reservation reservation = Reservation.builder()
-                .restaurantId(restaurant.getId())
-                .userId(currentUser.getId())
-                .tableId(availableTable.get().getId())
-                .reservationDateTime(request.getReservationDateTime())
-                .partySize(request.getPartySize())
-                .specialRequests(request.getSpecialRequests())
-                .status(ReservationStatus.CONFIRMED)
-                .createdAt(new Date())
-                .build();
-        
-        Reservation savedReservation = reservationRepository.save(reservation);
-        
-        // Update restaurant's booking count for today
-        if (savedReservation.getReservationDateTime().toLocalDate().equals(LocalDateTime.now().toLocalDate())) {
-            restaurant.setTotalBookingsToday(restaurant.getTotalBookingsToday() + 1);
-            restaurantRepository.save(restaurant);
-        }
-        
-        // Send confirmation email
-        sendConfirmationEmail(savedReservation, restaurant, currentUser);
-        
-        return mapToReservationResponse(savedReservation);
+
+    if (!restaurant.isApproved() || !restaurant.isActive()) {
+        throw new BadRequestException("Restaurant is not available for reservations");
     }
+
+    if (request.getReservationDateTime().isBefore(LocalDateTime.now())) {
+        throw new BadRequestException("Reservation time must be in the future");
+    }
+
+    log.info("Checking table availability for restaurant={}, partySize={}, time={}",
+            restaurant.getId(), request.getPartySize(), request.getReservationDateTime());
+
+    Optional<Table> availableTable = findAvailableTable(
+            restaurant,
+            request.getReservationDateTime(),
+            request.getPartySize());
+
+    if (availableTable.isEmpty()) {
+        log.warn("No available tables found for time={} and partySize={}",
+                request.getReservationDateTime(), request.getPartySize());
+        throw new BadRequestException("No available tables for the requested time and party size");
+    }
+
+    Reservation reservation = Reservation.builder()
+            .restaurantId(restaurant.getId())
+            .userId(currentUser.getId())
+            .tableId(availableTable.get().getId())
+            .reservationDateTime(request.getReservationDateTime())
+            .partySize(request.getPartySize())
+            .specialRequests(request.getSpecialRequests())
+            .status(ReservationStatus.CONFIRMED)
+            .createdAt(new Date())
+            .build();
+
+    Reservation savedReservation = reservationRepository.save(reservation);
+    log.info("Reservation saved: {}", savedReservation.getId());
+
+    // Safely increment booking count
+    if (savedReservation.getReservationDateTime().toLocalDate().equals(LocalDateTime.now().toLocalDate())) {
+        Integer currentCount = restaurant.getTotalBookingsToday();
+        if (currentCount == null) {
+            currentCount = 0;
+        }
+        restaurant.setTotalBookingsToday(currentCount + 1);
+        restaurantRepository.save(restaurant);
+        log.info("Updated total bookings today for restaurant {}", restaurant.getId());
+    }
+
+    // Send email (non-blocking)
+    try {
+        sendConfirmationEmail(savedReservation, restaurant, currentUser);
+    } catch (Exception e) {
+        log.warn("Failed to send confirmation email for reservation {}", savedReservation.getId(), e);
+    }
+
+    return mapToReservationResponse(savedReservation);
+}
+
+//     public ReservationResponse createReservation(ReservationCreateRequest request) {
+//         User currentUser = getCurrentUser();
+        
+//         log.info("Looking up restaurant: {}", request.getRestaurantId());
+//         // Find the restaurant2
+//         Restaurant restaurant = restaurantRepository.findByRestaurantExternalId(request.getRestaurantId())
+//                 .orElseThrow(() -> {log.error("Restaurant not found: {}", request.getRestaurantId()); return new ResourceNotFoundException("Restaurant not found");});
+        
+//         if (!restaurant.isApproved() || !restaurant.isActive()) {
+//             throw new BadRequestException("Restaurant is not available for reservations");
+//         }
+        
+//         // Check if reservation time is in the future
+//         if (request.getReservationDateTime().isBefore(LocalDateTime.now())) {
+//             throw new BadRequestException("Reservation time must be in the future");
+//         }
+        
+//         log.info("Checking table availability for restaurant={}, partySize={}, time={}",
+//          restaurant.getId());
+
+//         // Find an available table that can accommodate the party
+//         Optional<Table> availableTable = findAvailableTable(
+//                 restaurant, 
+//                 request.getReservationDateTime(), 
+//                 request.getPartySize());
+        
+//         if (availableTable.isEmpty()) {
+//             log.warn("No available tables found for time={} and partySize={}");
+//             throw new BadRequestException("No available tables for the requested time and party size");
+//         }
+        
+//         // Create the reservation
+//         Reservation reservation = Reservation.builder()
+//                 .restaurantId(restaurant.getId())
+//                 .userId(currentUser.getId())
+//                 .tableId(availableTable.get().getId())
+//                 .reservationDateTime(request.getReservationDateTime())
+//                 .partySize(request.getPartySize())
+//                 .specialRequests(request.getSpecialRequests())
+//                 .status(ReservationStatus.CONFIRMED)
+//                 .createdAt(new Date())
+//                 .build();
+        
+//         Reservation savedReservation = reservationRepository.save(reservation);
+        
+//         // Update restaurant's booking count for today
+//         if (savedReservation.getReservationDateTime().toLocalDate().equals(LocalDateTime.now().toLocalDate())) {
+//             restaurant.setTotalBookingsToday(restaurant.getTotalBookingsToday() + 1);
+//             restaurantRepository.save(restaurant);
+//         }
+        
+//         // Send confirmation email
+//         try
+//         {
+//             sendConfirmationEmail(savedReservation, restaurant, currentUser);
+//         }
+//         catch (Exception e) {
+//         log.warn("Failed to send email for reservation {}, but continuing", reservation.getId(), e);
+// }
+
+        
+//         return mapToReservationResponse(savedReservation);
+//     }
 
     public ReservationResponse updateReservation(String id, ReservationUpdateRequest request) {
         Reservation reservation = findReservationById(id);

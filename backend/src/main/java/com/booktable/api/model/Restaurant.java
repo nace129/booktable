@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "restaurants")
+@Document(collection = "restaurants-entries")
 @CompoundIndex(name = "location_index", def = "{'address.city': 1, 'address.state': 1, 'address.zipCode': 1}")
 public class Restaurant {
     

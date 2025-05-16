@@ -8,9 +8,11 @@ import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RestaurantRepository extends MongoRepository<Restaurant, String> {
+    
     
     Page<Restaurant> findByApprovedIsTrueAndActiveIsTrue(Pageable pageable);
     
@@ -29,4 +31,13 @@ public interface RestaurantRepository extends MongoRepository<Restaurant, String
     
     @Query("{'cuisineTypes': {$in: [?0]}, 'approved': true, 'active': true}")
     Page<Restaurant> findByCuisineType(String cuisineType, Pageable pageable);
+
+    @Query("{ id: ?0 }")
+    Optional<Restaurant> findByCustomRestaurantId(String id);
+
+    @Query("{ 'id': ?0 }")
+    Optional<Restaurant> findByRestaurantExternalId(String id);
+
+    // Restaurant findByCustomId(String id);
+
 }

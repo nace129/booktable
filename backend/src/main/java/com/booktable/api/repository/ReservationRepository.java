@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends MongoRepository<Reservation, String> {
@@ -31,4 +32,8 @@ public interface ReservationRepository extends MongoRepository<Reservation, Stri
     
     @Query(value = "{'reservationDateTime': {$gte: ?0, $lt: ?1}}", count = true)
     long countReservationsInDateRange(LocalDateTime start, LocalDateTime end);
+
+    @Query("{ 'id': ?0 }")
+    Optional<Reservation> findByRestaurantExternalId(String id);
+
 }
